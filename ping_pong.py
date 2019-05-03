@@ -96,6 +96,7 @@ if __name__ == '__main__':
     while not valid_teams:
         pl = input(f"\nState the name of the {ordinal(i)} player (e.g. aryan, Aryan or Aryan Jain are all acceptable)\nFor Doubles, spearate the 2 names with a comma ','\nEnter Name(s):\t").strip()
         if "," in pl:
+            args.__setattr__("style", "doubles")
             pls = pl.split(",")
             if len(pls) > 2: 
                 raise Exception(f"You cannot have more than 2 players in a team. This is not North Korea")
