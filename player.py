@@ -1,4 +1,5 @@
 from datetime import date
+from operator import itemgetter
 
 class Player(object):
     
@@ -20,9 +21,10 @@ class Player(object):
         """Add result of new game to game log for this player
         
         Arguments:
-            result {dict} -- dict with keys {outcome: str[win|loss], opponent: str, point_difference: int, date: datetime.date}
+            result {dict} -- dict with keys {winner: str, loser: str, point_difference: int, date: datetime.date}
         """
         self.games.append(result)
+        self.games = sorted(self.games, key=itemgetter('date'))
 
     def last_game(self):
         return max([g['date'] for g in self.games])
@@ -41,3 +43,6 @@ class Player(object):
                 'Games Today': self.daily_games(),
                 'Rating': self.rating
         }
+
+    def __str__(self):
+        return f"{self.name.title()}: {self.get_dict()}"
