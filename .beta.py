@@ -61,7 +61,7 @@ def prob_win(player, opponent):
     return 1 / (10**(-elo_diff/400) + 1)
 
 
-def margin_mltp(win_elo, loss_elo, result: dict, game_type:str='singles') -> float:
+def margin_mltp(win_elo, loss_elo, result: dict, style:str="singles") -> float:
     """Computes margin of victory multiplier for ELO gains or losses
     
     Arguments:
@@ -72,9 +72,9 @@ def margin_mltp(win_elo, loss_elo, result: dict, game_type:str='singles') -> flo
     Returns:
         float
     """
-    if game_type == 'singles':
+    if style == 'singles':
         base = math.e
-    if game_type == 'doubles':
+    if style == 'doubles':
         base = 10
     pd = result['point_difference']
     return math.log10(abs(pd) + 1)/math.log10(base) * (2.2/((win_elo-loss_elo)*0.005 + 2.2))
@@ -82,6 +82,46 @@ def margin_mltp(win_elo, loss_elo, result: dict, game_type:str='singles') -> flo
 
 def get_rank(player: Player, leaderboard: list) -> str:
     return ordinal(sorted(leaderboard).index(player) + 1)
+
+
+def update_player(player: Player, result: dict, opponent: Player, style:str="singles") -> Player:
+    """update player's ELO rating based on result
+    
+    Arguments:
+        player {Player}
+        result {dict}
+        opponent {Player}
+    
+    Returns:
+        Player
+    """
+    if style == "singles":
+        ro = player.rating
+        k = 10
+        if result['winner'] == player.name.title():
+            multiplier = margin_mltp(ro, opponent.rating, result)
+            expected = prob_win(player, opponent)
+            diff = k*multiplier*(1 - expected)
+            
+            logger.info(f"Expected probability of {player.name} winning was = {expected}")
+            logger.info(f"Margin of victory multiplier = {multiplier}")
+
+            rn = ro + diff
+            player.rating = rn
+            player.add_result(result)
+            return player, diff
+        else:
+            multiplier = margin_mltp(opponent.rating, ro, result)
+            expected = prob_win(player, opponent)
+            diff = k*multiplier*(0 - expected)
+
+            logger.info(f"Expected probability of {player.name} winning was = {expected}")
+            logger.info(f"Margin of loss multiplier = {multiplier}")
+
+            rn = ro + diff
+            player.rating = rn
+            player.add_result(result)
+            return player, diff
 
 
 def str2bool(v):
@@ -92,13 +132,14 @@ def str2bool(v):
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--path', '-p', default='.', help='Path to a leaderboard pickle.')
     parser.add_argument('--style', '-s', default='singles', choices=['singles', 'doubles'], help='Game format.')
     parser.add_argument('--log', '-l', default='INFO', choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'], help='Log level.')
     args = parser.parse_args()
-    
+    global logger
     logging.basicConfig(
             level=args.log, 
             format='%(asctime)s - %(levelname)s - %(name)s - %(message)s', 
@@ -108,7 +149,7 @@ if __name__ == '__main__':
     path = f"{args.path}/elo_leaderboard.pkl"
     
     try:
-        leaderboard = pd.read_pickle(path)
+        leaderboard = pickle.load(path)
     except:
         logger.error(f"Could not finding exisitng leaderboard at {path}")
         create_new = input(f"Create new leaderboard at {path}? [Y|N] ")
@@ -209,3 +250,23 @@ if __name__ == '__main__':
             "point_difference": point_diff,
             "date": date.today()
         }
+
+        winner, w_diff = update_player(winner, result, loser)
+        loser, l_diff = update_player(loser, result, winner)
+
+        for num, pl in enumerate(leaderboard):
+            if pl.name == winner.name:
+                leaderboard[num] = winner
+            elif pl.name == loser.name:
+                leaderboard[num] = loser
+        
+        if winner > loser:
+            print(f"Since {winner.name} had a higher ELO rating than {loser.name}, {winner.name} gains an adjusted rating of {w_diff} points.")
+            print(f"Since {loser.name} had a lower ELO rating than {winner.name}, {loser.name} loses an adjusted rating of {l_diff} points.")
+
+        elif winner < loser:
+            print(f"Since {winner.name} had a lower ELO rating than {loser.name}, {winner.name} gains an adjusted rating of {w_diff} points.")
+            print(f"Since {loser.name} had a higher ELO rating than {winner.name}, {loser.name} loses an adjusted rating of {l_diff} points.")
+
+        print(get_df(leaderboard))
+        pickle.dump(leaderboard)
