@@ -15,7 +15,7 @@ class Player(object):
         return len([g for g in self.games if g['date'] == today])
 
     def total_played(self):
-        return self.won + self.lost
+        return len(self.games)
 
     def add_result(self, result):
         """Add result of new game to game log for this player

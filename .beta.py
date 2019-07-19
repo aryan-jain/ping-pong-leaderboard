@@ -41,10 +41,14 @@ def get_df(players):
     """
     ranked = {
         p.name:p.get_dict()
-        for p in sorted(players)
+        for p in players
     }
-    return pd.DataFrame.from_dict(ranked, orient='index')
-    
+    df = pd.DataFrame.from_dict(ranked, orient='index')
+    df.sort_values('Rating', inplace = True, ascending=False)
+    df['Rank'] = [ordinal(x + 1) for x in range(len(df))]
+    cols = list(df.columns)
+    df = df.loc[:, cols[-1:]+cols[:-1]]
+    return df
 
 def prob_win(player, opponent):
     """Computes probability of player winning
@@ -106,8 +110,8 @@ def update_player(player: Player, result: dict, opponent: Player, style:str="sin
             logger.info(f"Expected probability of {player.name} winning was = {expected}")
             logger.info(f"Margin of victory multiplier = {multiplier}")
 
-            rn = ro + diff
-            player.rating = rn
+            # rn = ro + diff
+            # player.rating = rn
             player.add_result(result)
             return player, diff
         else:
@@ -118,8 +122,8 @@ def update_player(player: Player, result: dict, opponent: Player, style:str="sin
             logger.info(f"Expected probability of {player.name} winning was = {expected}")
             logger.info(f"Margin of loss multiplier = {multiplier}")
 
-            rn = ro + diff
-            player.rating = rn
+            # rn = ro + diff
+            # player.rating = rn
             player.add_result(result)
             return player, diff
 
@@ -137,8 +141,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--path', '-p', default='.', help='Path to a leaderboard pickle.')
     parser.add_argument('--style', '-s', default='singles', choices=['singles', 'doubles'], help='Game format.')
-    parser.add_argument('--log', '-l', default='INFO', choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'], help='Log level.')
+    parser.add_argument('--log', '-l', default='INFO', 
+            choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'], help='Log level.')
+
     args = parser.parse_args()
+
     global logger
     logging.basicConfig(
             level=args.log, 
@@ -149,7 +156,7 @@ if __name__ == '__main__':
     path = f"{args.path}/elo_leaderboard.pkl"
     
     try:
-        leaderboard = pickle.load(path)
+        leaderboard = pickle.load(open(path, 'rb'))
     except:
         logger.error(f"Could not finding exisitng leaderboard at {path}")
         create_new = input(f"Create new leaderboard at {path}? [Y|N] ")
@@ -188,7 +195,9 @@ if __name__ == '__main__':
                 else:
                     find = input(f"Could not find player record! In order to create a new one, please enter your full name or hit [Enter] to abort: ").strip()
                     if find:
-                        team.append(Player(find.title()))
+                        new_player = Player(find.title()) 
+                        team.append(new_player)
+                        leaderboard.append(new_player)
                     else:
                         logger.fatal(f"Please start over!")
                         sys.exit()
@@ -202,12 +211,14 @@ if __name__ == '__main__':
                     disambiguate = int(disambiguate)
                     players.append(find[disambiguate])
                 else:
-                    logger.info(f"Player Record Found:\n{str(find)}")
-                    players.append(find)
+                    logger.info(f"Player Record Found:\n{str(find[0])}")
+                    players.append(find[0])
             else:
                 find = input(f"Could not find player record! In order to create a new one, please enter your full name or hit [Enter] to abort: ").strip()
                 if find:
-                    players.append(Player(find.title()))
+                    new_player = Player(find.title()) 
+                    players.append(new_player)
+                    leaderboard.append(new_player)
                 else:
                     logger.fatal(f"Please start over!")
                     sys.exit()
@@ -224,8 +235,8 @@ if __name__ == '__main__':
     else:
         logger.info(f"Proceeding with singles weighting for ELO deltas...")
         print("\n\n\n")
-        print("Team 1:\n\t{}".format(players[0].name))
-        print("Team 2:\n\t{}".format(players[1].name))
+        print("Team 1:\n\t{}".format(players[0]))
+        print("Team 2:\n\t{}".format(players[1]))
 
         valid_winner = False
         while not valid_winner:
@@ -240,7 +251,6 @@ if __name__ == '__main__':
                 print("You must enter only a single character; 1 or 2")
         winner -= 1
 
-        print("\n\n\n")
         winner = players.pop(winner)
         loser = players[0]
 
@@ -254,12 +264,18 @@ if __name__ == '__main__':
         winner, w_diff = update_player(winner, result, loser)
         loser, l_diff = update_player(loser, result, winner)
 
+        winner.rating += w_diff
+        winner.won += 1
+        loser.rating += l_diff
+        loser.lost += 1
+
         for num, pl in enumerate(leaderboard):
             if pl.name == winner.name:
                 leaderboard[num] = winner
             elif pl.name == loser.name:
                 leaderboard[num] = loser
         
+        print("\n\n\n")
         if winner > loser:
             print(f"Since {winner.name} had a higher ELO rating than {loser.name}, {winner.name} gains an adjusted rating of {w_diff} points.")
             print(f"Since {loser.name} had a lower ELO rating than {winner.name}, {loser.name} loses an adjusted rating of {l_diff} points.")
@@ -268,5 +284,6 @@ if __name__ == '__main__':
             print(f"Since {winner.name} had a lower ELO rating than {loser.name}, {winner.name} gains an adjusted rating of {w_diff} points.")
             print(f"Since {loser.name} had a higher ELO rating than {winner.name}, {loser.name} loses an adjusted rating of {l_diff} points.")
 
+        print()
         print(get_df(leaderboard))
-        pickle.dump(leaderboard)
+        pickle.dump(leaderboard, open(path, 'wb'))
