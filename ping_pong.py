@@ -112,8 +112,8 @@ if __name__ == '__main__':
                     player = player.iloc[disambiguate]
                 else:
                     print(f"Player Record Not Found. Creating new entry...")
-                    leaderboard[pl.title(),:] = [float(len(leaderboard)),0,0,0,1440.0,0,datetime.date.today().strftime("%Y-%m-%d")]
-                    player = leaderboard[pl.title(),:]
+                    leaderboard.loc[pl.title()] = [float(len(leaderboard + 1)),0,0,0,1440.0,0,datetime.date.today().strftime("%Y-%m-%d")]
+                    player = leaderboard[leaderboard.index.str.match(pl, case=False)]
                 team.append(player.index.values[0])
             players.append(team)
         
@@ -129,7 +129,6 @@ if __name__ == '__main__':
             else:
                 print(f"Player Record Not Found. Creating new entry...")
                 leaderboard.loc[pl.title()] = [float(len(leaderboard) + 1),0,0,0,1440.0,0,datetime.date.today().strftime("%Y-%m-%d")]
-                print(leaderboard)
                 player = leaderboard[leaderboard.index.str.match(pl, case=False)]
 
             players.append(player.index.values[0])
