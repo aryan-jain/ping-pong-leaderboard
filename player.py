@@ -29,6 +29,13 @@ class Player(object):
     def last_game(self):
         return max([g['date'] for g in self.games])
 
+    def get_form(self):
+        if self.games:
+            form = ["W" if x['winner'] == self.name else "L" for x in sorted(self.games, key=itemgetter('date'), reverse=True)[:5]]
+            return ' '.join(form)
+        else:
+            return ""
+
     def __lt__(self, other):
         return self.rating < other.rating
 
@@ -41,7 +48,8 @@ class Player(object):
                 'Lost': self.lost,
                 'Total Played': self.total_played(),
                 'Games Today': self.daily_games(),
-                'Rating': self.rating
+                'Rating': self.rating,
+                'Form': self.get_form()
         }
 
     def __str__(self):
