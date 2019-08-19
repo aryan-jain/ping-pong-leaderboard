@@ -276,6 +276,7 @@ if __name__ == '__main__':
                 leaderboard[num] = loser
         
         print("\n\n\n")
+        print(f"{winner.name} defeated {loser.name} by {point_diff} points.")
         if winner > loser:
             print(f"Since {winner.name} had a higher ELO rating than {loser.name}, {winner.name} gains an adjusted rating of {w_diff} points.")
             print(f"Since {loser.name} had a lower ELO rating than {winner.name}, {loser.name} loses an adjusted rating of {l_diff} points.")
