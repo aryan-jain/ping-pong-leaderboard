@@ -263,17 +263,6 @@ if __name__ == '__main__':
 
         winner, w_diff = update_player(winner, result, loser)
         loser, l_diff = update_player(loser, result, winner)
-
-        winner.rating += w_diff
-        winner.won += 1
-        loser.rating += l_diff
-        loser.lost += 1
-
-        for num, pl in enumerate(leaderboard):
-            if pl.name == winner.name:
-                leaderboard[num] = winner
-            elif pl.name == loser.name:
-                leaderboard[num] = loser
         
         print("\n\n\n")
         print(f"{winner.name} defeated {loser.name} by {point_diff} points.")
@@ -285,6 +274,17 @@ if __name__ == '__main__':
             print(f"Since {winner.name} had a lower ELO rating than {loser.name}, {winner.name} gains an adjusted rating of {w_diff} points.")
             print(f"Since {loser.name} had a higher ELO rating than {winner.name}, {loser.name} loses an adjusted rating of {l_diff} points.")
 
+        winner.rating += w_diff
+        winner.won += 1
+        loser.rating += l_diff
+        loser.lost += 1
+
+        for num, pl in enumerate(leaderboard):
+            if pl.name == winner.name:
+                leaderboard[num] = winner
+            elif pl.name == loser.name:
+                leaderboard[num] = loser
+                
         print()
         print(get_df(leaderboard))
         pickle.dump(leaderboard, open(path, 'wb'))
