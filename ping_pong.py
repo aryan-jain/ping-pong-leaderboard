@@ -62,7 +62,7 @@ def prob_win(player, opponent):
         float
     """
     elo_diff = player.rating - opponent.rating
-    return 1 / (10**(-elo_diff/400) + 1)
+    return 1 / (10**(-elo_diff/150) + 1)
 
 
 def margin_mltp(win_elo, loss_elo, result: dict, style:str="singles") -> float:
