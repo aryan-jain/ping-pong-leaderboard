@@ -88,7 +88,7 @@ def get_rank(player: Player, leaderboard: list) -> str:
     return ordinal(sorted(leaderboard).index(player) + 1)
 
 
-def update_player(player: Player, result: dict, opponent: Player, style:str="singles") -> Player:
+def update_player(player: Player, result: dict, opponent: Player, style:str="singles") -> tuple:
     """update player's ELO rating based on result
     
     Arguments:
@@ -126,6 +126,14 @@ def update_player(player: Player, result: dict, opponent: Player, style:str="sin
             # player.rating = rn
             player.add_result(result)
             return player, diff
+
+
+
+def update_teams(team: tuple, result: dict, opponent: tuple) -> tuple:
+    r_avg = (team[0].rating + team[1].rating) / 2
+    opp_r_avg = (opponent[0].rating + opponent[1].rating) / 2
+    k = 5
+    pass
 
 
 def str2bool(v):
@@ -232,6 +240,29 @@ if __name__ == '__main__':
         print("Team 1:\n\t{}\n\t{}".format(players[0][0].name, players[0][1].name))
         print("Team 2:\n\t{}\n\t{}".format(players[1][0].name, players[1][1].name))
 
+        valid_winner = False
+        while not valid_winner:
+            winner = int(input("\nWhich team won; 1 or 2? "))
+            if winner in [1,2]:
+                point_diff = int(input("By how many points? [2-21]"))
+                if 2 <= point_diff <= 21:
+                    valid_winner = True
+                else:
+                    print("The minimum point difference is 2 and the maxiumum is 21. Enter 21 for a skunk.")
+            else:
+                print("You must enter only a single character; 1 or 2")
+        winner -= 1
+
+        win_team = players.pop(winner)
+        los_team = players[0]
+
+        result = {
+            "winner": win_team,
+            "loser": los_team,
+            "point_difference": point_diff,
+            "date": date.today()
+        }
+
     else:
         logger.info(f"Proceeding with singles weighting for ELO deltas...")
         print("\n\n\n")
@@ -246,7 +277,7 @@ if __name__ == '__main__':
                 if 2 <= point_diff <= 21:
                     valid_winner = True
                 else:
-                    print("The minimum point difference is 2 and the maxiumum is 21.")
+                    print("The minimum point difference is 2 and the maxiumum is 21. Enter 21 for a skunk.")
             else:
                 print("You must enter only a single character; 1 or 2")
         winner -= 1
