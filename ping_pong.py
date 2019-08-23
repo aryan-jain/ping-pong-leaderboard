@@ -186,7 +186,7 @@ if __name__ == '__main__':
         if "," in pl:
             args.__setattr__("style", "doubles")
             pls = pl.split(",")
-            if len(pls) > 2: 
+            if len(pls) > 2:
                 raise Exception(f"You cannot have more than 2 players in a team. This is not North Korea")
             team = []
             for pl in pls:
@@ -264,6 +264,12 @@ if __name__ == '__main__':
         }
 
     else:
+        for p in players:
+            if p.daily_games() >= 3:
+                print(f"{p.name} has already played at least 3 games today. Cannot log further results until tomorrow!")
+                print(f"Exiting...")
+                sys.exit()
+
         logger.info(f"Proceeding with singles weighting for ELO deltas...")
         print("\n\n\n")
         print("Team 1:\n\t{}".format(players[0]))
