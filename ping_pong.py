@@ -1,6 +1,6 @@
 import argparse, sys, pickle, traceback, math, logging
 import pandas as pd
-from datetime import date
+from datetime import date, timedelta
 from player import Player
 """
 @author: aryan-jain
@@ -321,6 +321,10 @@ if __name__ == '__main__':
                 leaderboard[num] = winner
             elif pl.name == loser.name:
                 leaderboard[num] = loser
+            
+            if date.today() - pl.last_game() > timedelta(days=7):
+                pl.rating -= 10
+                leaderboard[num] = pl
                 
         print()
         print(get_df(leaderboard))

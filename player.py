@@ -48,6 +48,7 @@ class Player(object):
                 'Lost': self.lost,
                 'Total Played': self.total_played(),
                 'Games Today': self.daily_games(),
+                'Last Game': self.last_game(),
                 'Rating': self.rating,
                 'Form': self.get_form()
         }
