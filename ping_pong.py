@@ -1,7 +1,9 @@
 import argparse, sys, pickle, traceback, math, logging
 import pandas as pd
+import numpy as np
 from datetime import date, timedelta
 from player import Player
+
 """
 @author: aryan-jain
 @version: 0.1
@@ -324,7 +326,19 @@ if __name__ == '__main__':
             
             if date.today() - pl.last_game() > timedelta(days=7):
                 pl.rating -= 10
+                pl.add_result(
+                    {
+                        "winner": "",
+                        "loser": pl.name,
+                        "point_difference": np.nan,
+                        "date": date.today()
+                    }
+                )
                 leaderboard[num] = pl
+
+                print(f"{pl.name.title()} has not played a game in 7 days.")
+                print(f"{pl.name.title()} takes a 10 ELO point penalty.")
+
                 
         print()
         print(get_df(leaderboard))
