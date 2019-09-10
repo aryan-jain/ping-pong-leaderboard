@@ -153,6 +153,7 @@ if __name__ == '__main__':
     parser.add_argument('--style', '-s', default='singles', choices=['singles', 'doubles'], help='Game format.')
     parser.add_argument('--log', '-l', default='INFO', 
             choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'], help='Log level.')
+    parser.add_argument('--mode', '-m', default='report', choices=['report', 'view'], help='Report game or view leaderboard?')
 
     args = parser.parse_args()
 
@@ -179,6 +180,9 @@ if __name__ == '__main__':
     if leaderboard:
         logger.info(f"Here is the preexisiting {args.style} leaderboard:")
         print(get_df(leaderboard))
+
+    if args.mode == 'view':
+        sys.exit()
 
     valid_teams = False
     players = []
