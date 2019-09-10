@@ -1,33 +1,33 @@
 import argparse, sys, pickle, traceback, math, logging
 import pandas as pd
 import numpy as np
-from datetime import date, timedelta
-from player import Player
+from datetime import datetime, timedelta
+from player import Player, dt_floor
 
 """
 @author: aryan-jain
 @version: 0.1
-@description: 
+@description:
     This is an ELO Rating scheme implementation of a leaderboard.
-    
+
     The leaderboard will be stored as a list of player objects in a pickle, which
     will be loaded on each run. The player object contains the log of all games that
     the player has played.
-    
+
     The base rating for a new player is set to 1400.
-    
+
     The K-Factor has been fixed at 10 as an appropriate value for a low number
     of players and a medium number of games. For doubles games, K-Factor will be
     reduced to 5 to dampen the ELO effect for a good player on a losing team, or
-    a bad player on a winning team. 
-    
+    a bad player on a winning team.
+
     There is a margin-of-victory multiplier that is being applied to the K-Factor
     in an effort to make point differences in games matter more.
 
-    The margin-of-victory multiplier is a logarithmic curve with a base of Euler's 
-    number and an aymptote that shifts based on the ELO rating difference between 
-    the 2 players. Under smaller ELO rating differentials, the asymptote should be 
-    close to 1.75. For doubles games, the margin of victory multiplier will have a 
+    The margin-of-victory multiplier is a logarithmic curve with a base of Euler's
+    number and an aymptote that shifts based on the ELO rating difference between
+    the 2 players. Under smaller ELO rating differentials, the asymptote should be
+    close to 1.75. For doubles games, the margin of victory multiplier will have a
     base of 10 to reduce the asymptote significantly.
 """
 
@@ -37,7 +37,7 @@ ordinal = lambda n: "%d%s" % (n,"tsnrhtdd"[(math.floor(n/10)%10!=1)*(n%10<4)*n%1
 def get_df(players):
     """Takes a list of Player objects and returns a DataFrame
     representation along with rankings for each player.
-    
+
     Arguments:
         players {list[Player]} -- list of Player objects
     """
@@ -55,11 +55,11 @@ def get_df(players):
 def prob_win(player, opponent):
     """Computes probability of player winning
     against opponent.
-    
+
     Arguments:
-        player {Player} 
+        player {Player}
         opponent {Player}
-    
+
     Returns:
         float
     """
@@ -69,12 +69,12 @@ def prob_win(player, opponent):
 
 def margin_mltp(win_elo, loss_elo, result: dict, style:str="singles") -> float:
     """Computes margin of victory multiplier for ELO gains or losses
-    
+
     Arguments:
         player {Player}
         opponent {Player}
-        result {dict} -- dict with keys {winner: str, loser: str, point_difference: int, date: datetime.date}
-    
+        result {dict} -- dict with keys {winner: str, loser: str, point_difference: int, date: datetime.datetime}
+
     Returns:
         float
     """
@@ -92,12 +92,12 @@ def get_rank(player: Player, leaderboard: list) -> str:
 
 def update_player(player: Player, result: dict, opponent: Player, style:str="singles") -> tuple:
     """update player's ELO rating based on result
-    
+
     Arguments:
         player {Player}
         result {dict}
         opponent {Player}
-    
+
     Returns:
         Player
     """
@@ -108,7 +108,7 @@ def update_player(player: Player, result: dict, opponent: Player, style:str="sin
             multiplier = margin_mltp(ro, opponent.rating, result)
             expected = prob_win(player, opponent)
             diff = k*multiplier*(1 - expected)
-            
+
             logger.info(f"Expected probability of {player.name} winning was = {expected}")
             logger.info(f"Margin of victory multiplier = {multiplier}")
 
@@ -151,7 +151,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--path', '-p', default='.', help='Path to a leaderboard pickle.')
     parser.add_argument('--style', '-s', default='singles', choices=['singles', 'doubles'], help='Game format.')
-    parser.add_argument('--log', '-l', default='INFO', 
+    parser.add_argument('--log', '-l', default='INFO',
             choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'], help='Log level.')
     parser.add_argument('--mode', '-m', default='report', choices=['report', 'view'], help='Report game or view leaderboard?')
 
@@ -159,13 +159,13 @@ if __name__ == '__main__':
 
     global logger
     logging.basicConfig(
-            level=args.log, 
-            format='%(asctime)s - %(levelname)s - %(name)s - %(message)s', 
+            level=args.log,
+            format='%(asctime)s - %(levelname)s - %(name)s - %(message)s',
             datefmt='%Y-%m-%d %H:%M:%S')
     logger = logging.getLogger('evolve')
 
     path = f"{args.path}/elo_leaderboard.pkl"
-    
+
     try:
         leaderboard = pickle.load(open(path, 'rb'))
     except:
@@ -184,6 +184,7 @@ if __name__ == '__main__':
     if args.mode == 'view':
         sys.exit()
 
+    now = dt_floor(datetime.now(), scale='minute')
     valid_teams = False
     players = []
     i = 1
@@ -209,7 +210,7 @@ if __name__ == '__main__':
                 else:
                     find = input(f"Could not find player record! In order to create a new one, please enter your full name or hit [Enter] to abort: ").strip()
                     if find:
-                        new_player = Player(find.title()) 
+                        new_player = Player(find.title())
                         team.append(new_player)
                         leaderboard.append(new_player)
                     else:
@@ -230,7 +231,7 @@ if __name__ == '__main__':
             else:
                 find = input(f"Could not find player record! In order to create a new one, please enter your full name or hit [Enter] to abort: ").strip()
                 if find:
-                    new_player = Player(find.title()) 
+                    new_player = Player(find.title())
                     players.append(new_player)
                     leaderboard.append(new_player)
                 else:
@@ -266,7 +267,7 @@ if __name__ == '__main__':
             "winner": win_team,
             "loser": los_team,
             "point_difference": point_diff,
-            "date": date.today()
+            "date": now
         }
 
     else:
@@ -301,12 +302,12 @@ if __name__ == '__main__':
             "winner": winner.name.title(),
             "loser": loser.name.title(),
             "point_difference": point_diff,
-            "date": date.today()
+            "date": now
         }
 
         winner, w_diff = update_player(winner, result, loser)
         loser, l_diff = update_player(loser, result, winner)
-        
+
         print("\n\n\n")
         print(f"{winner.name} defeated {loser.name} by {point_diff} points.")
         if winner > loser:
@@ -327,15 +328,15 @@ if __name__ == '__main__':
                 leaderboard[num] = winner
             elif pl.name == loser.name:
                 leaderboard[num] = loser
-            
-            if date.today() - pl.last_game() > timedelta(days=7):
+
+            if now - pl.last_game() > timedelta(days=7):
                 pl.rating -= 10
                 pl.add_result(
                     {
                         "winner": "",
                         "loser": pl.name,
                         "point_difference": np.nan,
-                        "date": date.today()
+                        "date": now
                     }
                 )
                 leaderboard[num] = pl
@@ -343,7 +344,7 @@ if __name__ == '__main__':
                 print(f"{pl.name.title()} has not played a game in 7 days.")
                 print(f"{pl.name.title()} takes a 10 ELO point penalty.")
 
-                
+
         print()
         print(get_df(leaderboard))
         pickle.dump(leaderboard, open(path, 'wb'))

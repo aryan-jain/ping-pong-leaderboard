@@ -1,25 +1,33 @@
-from datetime import date
+from datetime import datetime, timedelta
 from operator import itemgetter
 
+
+def dt_floor(t:datetime, scale='day') -> datetime:
+    if scale == 'day':
+        return t - timedelta(hours=t.hour, minutes=t.minute, seconds=t.second, microseconds=t.microsecond)
+    else:
+        return t - timedelta(seconds=t.second, microseconds=t.microsecond)
+
+
 class Player(object):
-    
+
     def __init__(self, name):
         self.name = name
         self.rating = 1400
         self.won = 0
         self.lost = 0
         self.games = []
-    
+
     def daily_games(self):
-        today = date.today()
-        return len([g for g in self.games if g['date'] == today])
+        today = dt_floor(datetime.now())
+        return len([g for g in self.games if dt_floor(g['date']) == today])
 
     def total_played(self):
         return len(self.games)
 
     def add_result(self, result):
         """Add result of new game to game log for this player
-        
+
         Arguments:
             result {dict} -- dict with keys {winner: str, loser: str, point_difference: int, date: datetime.date}
         """
@@ -27,7 +35,7 @@ class Player(object):
         self.games = sorted(self.games, key=itemgetter('date'))
 
     def last_game(self):
-        return max([g['date'] for g in self.games])
+        return max([g['date'] for g in self.games], default=None)
 
     def get_form(self):
         if self.games:
