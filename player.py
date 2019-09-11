@@ -6,7 +6,7 @@ def dt_floor(t:datetime, scale='day') -> datetime:
     if scale == 'day':
         return t - timedelta(hours=t.hour, minutes=t.minute, seconds=t.second, microseconds=t.microsecond)
     else:
-        return t - timedelta(seconds=t.second, microseconds=t.microsecond)
+        return t - timedelta(microseconds=t.microsecond)
 
 
 class Player(object):
@@ -35,7 +35,7 @@ class Player(object):
         self.games = sorted(self.games, key=itemgetter('date'))
 
     def last_game(self):
-        return max([g['date'] for g in self.games], default=None)
+        return max([g['date'] for g in self.games], default=datetime.now())
 
     def get_form(self):
         if self.games:
@@ -56,7 +56,7 @@ class Player(object):
                 'Lost': self.lost,
                 'Total Played': self.total_played(),
                 'Games Today': self.daily_games(),
-                'Last Game': self.last_game(),
+                'Last Game': self.last_game().strftime('%Y-%m-%d %H:%M'),
                 'Rating': self.rating,
                 'Form': self.get_form()
         }
