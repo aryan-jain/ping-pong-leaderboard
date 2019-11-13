@@ -154,7 +154,7 @@ if __name__ == '__main__':
     parser.add_argument('--style', '-s', default='singles', choices=['singles', 'doubles'], help='Game format.')
     parser.add_argument('--log', '-l', default='INFO',
             choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'], help='Log level.')
-    parser.add_argument('--mode', '-m', default='report', choices=['report', 'view', 'retroactive-report'],
+    parser.add_argument('--mode', '-m', default='report', choices=['report', 'view', 'old'],
             help='Report game, view leaderboard, or retroactively report game?')
 
     args = parser.parse_args()
@@ -186,7 +186,7 @@ if __name__ == '__main__':
     if args.mode == 'view':
         sys.exit()
 
-    if args.mode == 'retroactive-report':
+    if args.mode == 'old':
         now = None
         while not now:
             dt = input(f"\nEnter the ISO format datetime (e.g. 2019-09-10T15:18) of the game you wish to retroactively insert into the leaderboard (note that games played more than a week ago will not be honored):\t").strip()
@@ -258,37 +258,38 @@ if __name__ == '__main__':
             valid_teams = True
 
     if type(players[0]) == list:
-        logger.info(f"Proceeding with doubles weighting for ELO deltas...")
-        print("\n\n\n")
-        print("Team 1:\n\t{}\n\t{}".format(players[0][0].name, players[0][1].name))
-        print("Team 2:\n\t{}\n\t{}".format(players[1][0].name, players[1][1].name))
+        # logger.info(f"Proceeding with doubles weighting for ELO deltas...")
+        # print("\n\n\n")
+        # print("Team 1:\n\t{}\n\t{}".format(players[0][0].name, players[0][1].name))
+        # print("Team 2:\n\t{}\n\t{}".format(players[1][0].name, players[1][1].name))
 
-        valid_winner = False
-        while not valid_winner:
-            winner = int(input("\nWhich team won; 1 or 2? "))
-            if winner in [1,2]:
-                point_diff = int(input("By how many points? [2-21]"))
-                if 2 <= point_diff <= 21:
-                    valid_winner = True
-                else:
-                    print("The minimum point difference is 2 and the maxiumum is 21. Enter 21 for a skunk.")
-            else:
-                print("You must enter only a single character; 1 or 2")
-        winner -= 1
+        # valid_winner = False
+        # while not valid_winner:
+        #     winner = int(input("\nWhich team won; 1 or 2? "))
+        #     if winner in [1,2]:
+        #         point_diff = int(input("By how many points? [2-21]"))
+        #         if 2 <= point_diff <= 21:
+        #             valid_winner = True
+        #         else:
+        #             print("The minimum point difference is 2 and the maxiumum is 21. Enter 21 for a skunk.")
+        #     else:
+        #         print("You must enter only a single character; 1 or 2")
+        # winner -= 1
 
-        win_team = players.pop(winner)
-        los_team = players[0]
+        # win_team = players.pop(winner_idx)
+        # los_team = players[0]
 
-        result = {
-            "winner": win_team,
-            "loser": los_team,
-            "point_difference": point_diff,
-            "date": now
-        }
+        # result = {
+        #     "winner": win_team,
+        #     "loser": los_team,
+        #     "point_difference": point_diff,
+        #     "date": now
+        # }
+        pass
 
     else:
         for p in players:
-            if p.daily_games() >= 3 and args.mode != 'retroactive-report':
+            if p.daily_games() >= 3 and args.mode != 'old':
                 print(f"{p.name} has already played at least 3 games today. Cannot log further results until tomorrow!")
                 print(f"Exiting...")
                 sys.exit()
@@ -300,8 +301,8 @@ if __name__ == '__main__':
 
         valid_winner = False
         while not valid_winner:
-            winner = int(input("\nWhich team won; 1 or 2? "))
-            if winner in [1,2]:
+            winner_idx = int(input("\nWhich team won; 1 or 2? "))
+            if winner_idx in [1,2]:
                 point_diff = int(input("By how many points? [2-21]"))
                 if 2 <= point_diff <= 21:
                     valid_winner = True
@@ -309,9 +310,49 @@ if __name__ == '__main__':
                     print("The minimum point difference is 2 and the maxiumum is 21. Enter 21 for a skunk.")
             else:
                 print("You must enter only a single character; 1 or 2")
-        winner -= 1
+        winner_idx -= 1
 
-        if args.mode == 'retroactive-report':
+        if args.mode == 'old':
+            winner = players.pop(winner_idx)
+            loser = players[0]
+
+            insert_result = {
+                "winner": winner.name.title(),
+                "loser": loser.name.title(),
+                "point_difference": point_diff,
+                "date": now
+            }
+
+            
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
             unique_games = {}
             games = []
             for player in leaderboard:
@@ -330,7 +371,7 @@ if __name__ == '__main__':
             logger.info(f"Here is the {args.style} leaderboard before retroactively updating:")
             print(get_df(leaderboard))
 
-            winner = players.pop(winner)
+            winner = players.pop(winner_idx)
             loser = players[0]
 
             result = {
@@ -440,7 +481,7 @@ if __name__ == '__main__':
                 print(get_df(leaderboard))
 
         else:
-            winner = players.pop(winner)
+            winner = players.pop(winner_idx)
             loser = players[0]
 
             result = {
