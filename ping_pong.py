@@ -164,7 +164,7 @@ if __name__ == '__main__':
             level=args.log,
             format='%(asctime)s - %(levelname)s - %(name)s - %(message)s',
             datefmt='%Y-%m-%d %H:%M:%S')
-    logger = logging.getLogger('evolve')
+    logger = logging.getLogger('ping_pong_season_2')
 
     path = f"{args.path}/elo_leaderboard.pkl"
 
