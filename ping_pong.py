@@ -3,7 +3,6 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 from player import Player, dt_floor
-from dateutil.parser import parse
 
 """
 @author: aryan-jain
@@ -154,8 +153,7 @@ if __name__ == '__main__':
     parser.add_argument('--style', '-s', default='singles', choices=['singles', 'doubles'], help='Game format.')
     parser.add_argument('--log', '-l', default='INFO',
             choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'], help='Log level.')
-    parser.add_argument('--mode', '-m', default='report', choices=['report', 'view', 'old'],
-            help='Report game, view leaderboard, or retroactively report game?')
+    parser.add_argument('--mode', '-m', default='report', choices=['report', 'view'], help='Report game or view leaderboard?')
 
     args = parser.parse_args()
 
@@ -186,21 +184,7 @@ if __name__ == '__main__':
     if args.mode == 'view':
         sys.exit()
 
-    if args.mode == 'old':
-        now = None
-        while not now:
-            dt = input(f"\nEnter the ISO format datetime (e.g. 2019-09-10T15:18) of the game you wish to retroactively insert into the leaderboard (note that games played more than a week ago will not be honored):\t").strip()
-            try:
-                now = dt_floor(parse(dt), scale='minute')
-            except:
-                print(f"Unable to parse the datetime entered...please ensure it is of the proper format.\n{traceback.format_exc()}")
-                continue
-            if now + timedelta(days=7) < dt_floor(datetime.now()):
-                print(f"{now} is more than 7 days ago so it will not be honored.")
-                sys.exit()
-    else:
-        now = dt_floor(datetime.now(), scale='minute')
-
+    now = dt_floor(datetime.now(), scale='minute')
     valid_teams = False
     players = []
     i = 1
@@ -258,38 +242,37 @@ if __name__ == '__main__':
             valid_teams = True
 
     if type(players[0]) == list:
-        # logger.info(f"Proceeding with doubles weighting for ELO deltas...")
-        # print("\n\n\n")
-        # print("Team 1:\n\t{}\n\t{}".format(players[0][0].name, players[0][1].name))
-        # print("Team 2:\n\t{}\n\t{}".format(players[1][0].name, players[1][1].name))
+        logger.info(f"Proceeding with doubles weighting for ELO deltas...")
+        print("\n\n\n")
+        print("Team 1:\n\t{}\n\t{}".format(players[0][0].name, players[0][1].name))
+        print("Team 2:\n\t{}\n\t{}".format(players[1][0].name, players[1][1].name))
 
-        # valid_winner = False
-        # while not valid_winner:
-        #     winner = int(input("\nWhich team won; 1 or 2? "))
-        #     if winner in [1,2]:
-        #         point_diff = int(input("By how many points? [2-21]"))
-        #         if 2 <= point_diff <= 21:
-        #             valid_winner = True
-        #         else:
-        #             print("The minimum point difference is 2 and the maxiumum is 21. Enter 21 for a skunk.")
-        #     else:
-        #         print("You must enter only a single character; 1 or 2")
-        # winner -= 1
+        valid_winner = False
+        while not valid_winner:
+            winner = int(input("\nWhich team won; 1 or 2? "))
+            if winner in [1,2]:
+                point_diff = int(input("By how many points? [2-21]"))
+                if 2 <= point_diff <= 21:
+                    valid_winner = True
+                else:
+                    print("The minimum point difference is 2 and the maxiumum is 21. Enter 21 for a skunk.")
+            else:
+                print("You must enter only a single character; 1 or 2")
+        winner -= 1
 
-        # win_team = players.pop(winner_idx)
-        # los_team = players[0]
+        win_team = players.pop(winner)
+        los_team = players[0]
 
-        # result = {
-        #     "winner": win_team,
-        #     "loser": los_team,
-        #     "point_difference": point_diff,
-        #     "date": now
-        # }
-        pass
+        result = {
+            "winner": win_team,
+            "loser": los_team,
+            "point_difference": point_diff,
+            "date": now
+        }
 
     else:
         for p in players:
-            if p.daily_games() >= 3 and args.mode != 'old':
+            if p.daily_games() >= 3:
                 print(f"{p.name} has already played at least 3 games today. Cannot log further results until tomorrow!")
                 print(f"Exiting...")
                 sys.exit()
@@ -301,8 +284,8 @@ if __name__ == '__main__':
 
         valid_winner = False
         while not valid_winner:
-            winner_idx = int(input("\nWhich team won; 1 or 2? "))
-            if winner_idx in [1,2]:
+            winner = int(input("\nWhich team won; 1 or 2? "))
+            if winner in [1,2]:
                 point_diff = int(input("By how many points? [2-21]"))
                 if 2 <= point_diff <= 21:
                     valid_winner = True
@@ -310,227 +293,58 @@ if __name__ == '__main__':
                     print("The minimum point difference is 2 and the maxiumum is 21. Enter 21 for a skunk.")
             else:
                 print("You must enter only a single character; 1 or 2")
-        winner_idx -= 1
-
-        if args.mode == 'old':
-            winner = players.pop(winner_idx)
-            loser = players[0]
-
-            insert_result = {
-                "winner": winner.name.title(),
-                "loser": loser.name.title(),
-                "point_difference": point_diff,
-                "date": now
-            }
-
-            
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-            unique_games = {}
-            games = []
-            for player in leaderboard:
-                for game in list(player.games):
-                    if game['date'] > now:
-                        if game['date'] not in unique_games:
-                            games.append(game)
-                        player.games.remove(game)
-                        unique_games[game['date']] = game
-
-                player.won = len([g for g in player.games if g['winner'] == player.name])
-                player.lost = len([g for g in player.games if g['loser'] == player.name])
-                # player.rating = ?
-                player.rating = 1400
-
-            logger.info(f"Here is the {args.style} leaderboard before retroactively updating:")
-            print(get_df(leaderboard))
-
-            winner = players.pop(winner_idx)
-            loser = players[0]
-
-            result = {
-                "winner": winner.name.title(),
-                "loser": loser.name.title(),
-                "point_difference": point_diff,
-                "date": now
-            }
-
-            winner, w_diff = update_player(winner, result, loser)
-            loser, l_diff = update_player(loser, result, winner)
-
-            print("\n\n\n")
-            print(f"{winner.name} defeated {loser.name} by {point_diff} points.")
-            if winner > loser:
-                print(f"Since {winner.name} had a higher ELO rating than {loser.name}, {winner.name} gains an adjusted rating of {w_diff} points.")
-                print(f"Since {loser.name} had a lower ELO rating than {winner.name}, {loser.name} loses an adjusted rating of {l_diff} points.")
-
-            elif winner < loser:
-                print(f"Since {winner.name} had a lower ELO rating than {loser.name}, {winner.name} gains an adjusted rating of {w_diff} points.")
-                print(f"Since {loser.name} had a higher ELO rating than {winner.name}, {loser.name} loses an adjusted rating of {l_diff} points.")
-
-            winner.rating += w_diff
-            winner.won += 1
-            loser.rating += l_diff
-            loser.lost += 1
-
-            for num, pl in enumerate(leaderboard):
-                if pl.name == winner.name:
-                    leaderboard[num] = winner
-                elif pl.name == loser.name:
-                    leaderboard[num] = loser
-
-                if now - pl.last_game() > timedelta(days=7):
-                    pl.rating -= 10
-                    pl.add_result(
-                        {
-                            "winner": "",
-                            "loser": pl.name,
-                            "point_difference": np.nan,
-                            "date": now
-                        }
-                    )
-                    leaderboard[num] = pl
-
-                    print(f"{pl.name.title()} has not played a game in 7 days.")
-                    print(f"{pl.name.title()} takes a 10 ELO point penalty.")
-
-
-            print()
-            print(get_df(leaderboard))
-
-            for game in games:
-                print("Winner:\t{}".format(game['winner']))
-                print("Loser:\t{}".format(game['loser']))
-                print("Point difference:\t{}".format(game['point_difference']))
-                print("Date:\t{}".format(game['date']))
-
-                result = {
-                    "winner": game['winner'].title(),
-                    "loser": game['loser'].title(),
-                    "point_difference": game['point_difference'],
-                    "date": game['date']
-                }
-
-                winner, w_diff = update_player(winner, result, loser)
-                loser, l_diff = update_player(loser, result, winner)
-
-                print("\n\n\n")
-                print(f"{winner.name} defeated {loser.name} by {point_diff} points.")
-                if winner > loser:
-                    print(f"Since {winner.name} had a higher ELO rating than {loser.name}, {winner.name} gains an adjusted rating of {w_diff} points.")
-                    print(f"Since {loser.name} had a lower ELO rating than {winner.name}, {loser.name} loses an adjusted rating of {l_diff} points.")
-
-                elif winner < loser:
-                    print(f"Since {winner.name} had a lower ELO rating than {loser.name}, {winner.name} gains an adjusted rating of {w_diff} points.")
-                    print(f"Since {loser.name} had a higher ELO rating than {winner.name}, {loser.name} loses an adjusted rating of {l_diff} points.")
-
-                winner.rating += w_diff
-                winner.won += 1
-                loser.rating += l_diff
-                loser.lost += 1
-
-                for num, pl in enumerate(leaderboard):
-                    if pl.name == winner.name:
-                        leaderboard[num] = winner
-                    elif pl.name == loser.name:
-                        leaderboard[num] = loser
-
-                    if game['date'] - pl.last_game() > timedelta(days=7):
-                        pl.rating -= 10
-                        pl.add_result(
-                            {
-                                "winner": "",
-                                "loser": pl.name,
-                                "point_difference": np.nan,
-                                "date": game['date']
-                            }
-                        )
-                        leaderboard[num] = pl
-
-                        print(f"{pl.name.title()} has not played a game in 7 days.")
-                        print(f"{pl.name.title()} takes a 10 ELO point penalty.")
-
-
-                print()
-                print(get_df(leaderboard))
-
-        else:
-            winner = players.pop(winner_idx)
-            loser = players[0]
-
-            result = {
-                "winner": winner.name.title(),
-                "loser": loser.name.title(),
-                "point_difference": point_diff,
-                "date": now
-            }
-
-            winner, w_diff = update_player(winner, result, loser)
-            loser, l_diff = update_player(loser, result, winner)
-
-            print("\n\n\n")
-            print(f"{winner.name} defeated {loser.name} by {point_diff} points.")
-            if winner > loser:
-                print(f"Since {winner.name} had a higher ELO rating than {loser.name}, {winner.name} gains an adjusted rating of {w_diff} points.")
-                print(f"Since {loser.name} had a lower ELO rating than {winner.name}, {loser.name} loses an adjusted rating of {l_diff} points.")
-
-            elif winner < loser:
-                print(f"Since {winner.name} had a lower ELO rating than {loser.name}, {winner.name} gains an adjusted rating of {w_diff} points.")
-                print(f"Since {loser.name} had a higher ELO rating than {winner.name}, {loser.name} loses an adjusted rating of {l_diff} points.")
-
-            winner.rating += w_diff
-            winner.won += 1
-            loser.rating += l_diff
-            loser.lost += 1
-
-            for num, pl in enumerate(leaderboard):
-                if pl.name == winner.name:
-                    leaderboard[num] = winner
-                elif pl.name == loser.name:
-                    leaderboard[num] = loser
-
-                if now - pl.last_game() > timedelta(days=7):
-                    pl.rating -= 10
-                    pl.add_result(
-                        {
-                            "winner": "",
-                            "loser": pl.name,
-                            "point_difference": np.nan,
-                            "date": now
-                        }
-                    )
-                    leaderboard[num] = pl
-
-                    print(f"{pl.name.title()} has not played a game in 7 days.")
-                    print(f"{pl.name.title()} takes a 10 ELO point penalty.")
-
-
-            print()
-            print(get_df(leaderboard))
-            pickle.dump(leaderboard, open(path, 'wb'))
+        winner -= 1
+
+        winner = players.pop(winner)
+        loser = players[0]
+
+        result = {
+            "winner": winner.name.title(),
+            "loser": loser.name.title(),
+            "point_difference": point_diff,
+            "date": now
+        }
+
+        winner, w_diff = update_player(winner, result, loser)
+        loser, l_diff = update_player(loser, result, winner)
+
+        print("\n\n\n")
+        print(f"{winner.name} defeated {loser.name} by {point_diff} points.")
+        if winner > loser:
+            print(f"Since {winner.name} had a higher ELO rating than {loser.name}, {winner.name} gains an adjusted rating of {w_diff} points.")
+            print(f"Since {loser.name} had a lower ELO rating than {winner.name}, {loser.name} loses an adjusted rating of {l_diff} points.")
+
+        elif winner < loser:
+            print(f"Since {winner.name} had a lower ELO rating than {loser.name}, {winner.name} gains an adjusted rating of {w_diff} points.")
+            print(f"Since {loser.name} had a higher ELO rating than {winner.name}, {loser.name} loses an adjusted rating of {l_diff} points.")
+
+        winner.rating += w_diff
+        winner.won += 1
+        loser.rating += l_diff
+        loser.lost += 1
+
+        for num, pl in enumerate(leaderboard):
+            if pl.name == winner.name:
+                leaderboard[num] = winner
+            elif pl.name == loser.name:
+                leaderboard[num] = loser
+
+            if now - pl.last_game() > timedelta(days=7):
+                pl.rating -= 10
+                pl.add_result(
+                    {
+                        "winner": "",
+                        "loser": pl.name,
+                        "point_difference": np.nan,
+                        "date": now
+                    }
+                )
+                leaderboard[num] = pl
+
+                print(f"{pl.name.title()} has not played a game in 7 days.")
+                print(f"{pl.name.title()} takes a 10 ELO point penalty.")
+
+
+        print()
+        print(get_df(leaderboard))
+        pickle.dump(leaderboard, open(path, 'wb'))
