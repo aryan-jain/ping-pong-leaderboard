@@ -1,4 +1,5 @@
 import argparse, sys, pickle, traceback, math, logging
+import os
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
@@ -164,10 +165,10 @@ if __name__ == '__main__':
             datefmt='%Y-%m-%d %H:%M:%S')
     logger = logging.getLogger('ping_pong_season_4')
 
-    path = f"{args.path}/elo_leaderboard.pkl"
+    path = f"{args.path}/elo_doubles_leaderboard.pkl" if args.style == 'doubles' else f"{args.path}/elo_leaderboard.pkl"
 
     try:
-        leaderboard = pickle.load(open(path, 'rb'))
+        leaderboard = pickle.load(open(f"{args.path}/elo_leaderboard.pkl", 'rb'))
     except:
         logger.error(f"Could not finding exisitng leaderboard at {path}")
         create_new = input(f"Create new leaderboard at {path}? [Y|N] ")
@@ -206,7 +207,7 @@ if __name__ == '__main__':
                         team.append(find[disambiguate])
                     else:
                         logger.info(f"Player Record Found:\n{str(find)}")
-                        team.append(find)
+                        team.append(find[0])
                 else:
                     find = input(f"Could not find player record! In order to create a new one, please enter your full name or hit [Enter] to abort: ").strip()
                     if find:
@@ -270,6 +271,53 @@ if __name__ == '__main__':
             "date": now
         }
 
+        print("\n\n\n")
+        print(f"{' & '.join([w.name for w in win_team])} defeated {' & '.join([l.name for l in los_team])} by {point_diff} points.")
+        best = [max(team) for team in [win_team, los_team]]
+        worst = [min(team) for team in [win_team, los_team]]
+        for title, players in zip(['Best', 'Worst'], [best, worst]):
+            print(f"{title} players:")
+            winner, loser = players
+            winner, w_diff = update_player(winner, result, loser)
+            loser, l_diff = update_player(loser, result, winner)
+            if winner > loser:
+                print(f"\tSince {winner.name} had a higher ELO rating than {loser.name}, {winner.name} gains an adjusted rating of {w_diff} points.")
+                print(f"\tSince {loser.name} had a lower ELO rating than {winner.name}, {loser.name} loses an adjusted rating of {l_diff} points.")
+
+            elif winner < loser:
+                print(f"\tSince {winner.name} had a lower ELO rating than {loser.name}, {winner.name} gains an adjusted rating of {w_diff} points.")
+                print(f"\tSince {loser.name} had a higher ELO rating than {winner.name}, {loser.name} loses an adjusted rating of {l_diff} points.")
+
+            winner.rating += w_diff
+            winner.won += 1
+            loser.rating += l_diff
+            loser.lost += 1
+
+            for num, pl in enumerate(leaderboard):
+                if pl.name == winner.name:
+                    leaderboard[num] = winner
+                elif pl.name == loser.name:
+                    leaderboard[num] = loser
+
+                if now - pl.last_game() > timedelta(days=7):
+                    pl.rating -= 10
+                    pl.add_result(
+                        {
+                            "winner": "",
+                            "loser": pl.name,
+                            "point_difference": np.nan,
+                            "date": now
+                        }
+                    )
+                    leaderboard[num] = pl
+
+                    print(f"{pl.name.title()} has not played a game in 7 days.")
+                    print(f"{pl.name.title()} takes a 10 ELO point penalty.")
+
+
+        print()
+        print(get_df(leaderboard))
+        pickle.dump(leaderboard, open(path, 'wb'))
     else:
         for p in players:
             if p.daily_games() >= 3:
@@ -348,3 +396,4 @@ if __name__ == '__main__':
         print()
         print(get_df(leaderboard))
         pickle.dump(leaderboard, open(path, 'wb'))
+
