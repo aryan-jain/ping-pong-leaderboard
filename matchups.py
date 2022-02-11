@@ -18,6 +18,18 @@ def main():
                 matchups.append((team[0], team[1], sit_out))
 
     print(f"There are {len(matchups)} possible games.")
+    matchups = [
+        y
+        for x in zip(
+            *[
+                [j for j in i]
+                for _, i in itertools.groupby(
+                    sorted(matchups, key=lambda x: x[-1]), lambda x: x[-1]
+                )
+            ]
+        )
+        for y in x
+    ]
     for match in matchups:
         print(f"{match[0]} vs. {match[1]} -- {','.join(match[2])} sits out.")
 
